@@ -13,7 +13,7 @@
         prefWidth="600.0"
         xmlns="http://javafx.com/javafx/8.0.172-ea"
         xmlns:fx="http://javafx.com/fxml/1"
-        fx:controller="io.github.ma1uta.jxclient.ui.Login"
+        fx:controller="io.github.ma1uta.jxclient.ui.LoginViewController"
 >
     <Label
             text="%login.caption"

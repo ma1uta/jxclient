@@ -19,7 +19,6 @@ public class Bootstrap {
      */
     public static void main(String[] args) {
         System.setProperty("javafx.preloader", Splash.class.getName());
-        System.setProperty("jdk.internal.httpclient.debug", "true");
         Application.launch(Client.class, args);
     }
 }

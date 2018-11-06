@@ -321,6 +321,9 @@ public class PlainRequestFactory implements RequestFactory {
         for (Map.Entry<String, String> headerParam : params.getHeaderParams().entrySet()) {
             current = current.header(headerParam.getKey(), encode(headerParam.getValue()));
         }
+        if (params.getAccessToken() != null) {
+            current = current.header("Authorization", "Bearer " + params.getAccessToken());
+        }
         return current.setHeader(HttpHeaders.CONTENT_TYPE, contentType);
     }
 

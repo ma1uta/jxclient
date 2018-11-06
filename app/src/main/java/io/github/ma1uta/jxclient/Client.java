@@ -1,12 +1,18 @@
 package io.github.ma1uta.jxclient;
 
+import io.github.ma1uta.jxclient.account.Account;
+import io.github.ma1uta.jxclient.ui.MainViewController;
 import javafx.application.Application;
-import javafx.application.Platform;
+import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.stage.Stage;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.ResourceBundle;
+import java.util.prefs.BackingStoreException;
+import java.util.prefs.Preferences;
 
 /**
  * Jx client.
@@ -18,7 +24,9 @@ public class Client extends Application {
     private static Client app;
 
     private Stage rootStage;
-    private Scene rootScene;
+    private Parent rootForm;
+    private FXMLLoader rootFormLoader;
+    private List<Account> accountList = new ArrayList<>();
 
     private ResourceBundle i18nBundle;
 
@@ -29,34 +37,36 @@ public class Client extends Application {
     @Override
     public void init() throws Exception {
         app = this;
-
         i18nBundle = ResourceBundle.getBundle("/i18n/messages");
+        rootFormLoader = new FXMLLoader(getClass().getResource("/io/github/ma1uta/jxclient/ui/Main.fxml"), i18nBundle);
+        rootForm = rootFormLoader.load();
+        loadAccounts();
     }
 
     @Override
     public void start(Stage primaryStage) throws Exception {
         rootStage = primaryStage;
+        var scene = new Scene(rootForm);
+        rootStage.setScene(scene);
+        MainViewController rootController = rootFormLoader.getController();
+        for (Account account : accountList) {
+            rootController.addAccount(account);
+        }
+        rootStage.show();
     }
 
-    private void showForm(Parent parent) {
-        if (Platform.isFxApplicationThread()) {
-            showFormInFxThread(parent);
-        } else {
-            Platform.runLater(() -> showFormInFxThread(parent));
+    private void loadAccounts() throws BackingStoreException {
+        var root = Preferences.userRoot();
+        var accounts = root.node("jxclient/accounts");
+        for (var accountName : accounts.childrenNames()) {
+            var account = new Account();
+            account.init(accounts.node(accountName), i18nBundle);
+            accountList.add(account);
         }
-    }
-
-    private void showFormInFxThread(Parent parent) {
-        if (rootScene == null) {
-            rootScene = new Scene(parent);
-            rootStage.setScene(rootScene);
-        } else {
-            rootScene.setRoot(parent);
-            parent.layout();
-        }
-        if (!rootStage.isShowing()) {
-            rootStage.show();
-        }
+        var account = new Account();
+        account.init(i18nBundle);
+        accountList.add(account);
+        accountList.get(accountList.size() - (accountList.size() == 1 ? 1 : 2)).getTab().getContent().requestFocus();
     }
 }
 

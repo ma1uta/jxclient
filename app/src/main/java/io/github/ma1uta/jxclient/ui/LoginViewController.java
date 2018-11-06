@@ -1,8 +1,7 @@
 package io.github.ma1uta.jxclient.ui;
 
-import io.github.ma1uta.jxclient.Client;
+import io.github.ma1uta.jxclient.account.Account;
 import io.github.ma1uta.jxclient.matrix.PlainRequestFactory;
-import io.github.ma1uta.matrix.Id;
 import io.github.ma1uta.matrix.client.MatrixClient;
 import io.github.ma1uta.matrix.client.model.auth.LoginRequest;
 import io.github.ma1uta.matrix.client.model.auth.LoginResponse;
@@ -23,9 +22,9 @@ import java.net.URL;
 import java.util.ResourceBundle;
 
 /**
- * Login view.
+ * LoginViewController view.
  */
-public class Login implements Initializable {
+public class LoginViewController implements Initializable {
 
     private static final System.Logger LOGGER = System.getLogger("LOGIN");
 
@@ -37,6 +36,8 @@ public class Login implements Initializable {
 
     @FXML
     private PasswordField passwordField;
+
+    private Account account;
 
     private Service<LoginResponse> loginResponseService;
 
@@ -72,10 +73,7 @@ public class Login implements Initializable {
                 };
             }
         };
-        loginResponseService.setOnSucceeded(event -> {
-            LoginResponse response = (LoginResponse) event.getSource().getValue();
-            Client.getInstance().updateToken(response.getAccessToken(), Id.getInstance().domain(response.getUserId()));
-        });
+        loginResponseService.setOnSucceeded(event -> account.updateToken((LoginResponse) event.getSource().getValue()));
         loginResponseService.setOnFailed(event -> {
             Throwable exception = event.getSource().getException();
             LOGGER.log(System.Logger.Level.ERROR, "Failed to login.", exception);
@@ -83,8 +81,12 @@ public class Login implements Initializable {
         });
     }
 
+    public void setAccount(Account account) {
+        this.account = account;
+    }
+
     /**
-     * Login action.
+     * LoginViewController action.
      */
     public void login() {
         if (!loginResponseService.isRunning()) {
