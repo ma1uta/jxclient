@@ -2,6 +2,7 @@ package io.github.ma1uta.jxclient.account;
 
 import static java.lang.System.Logger.Level.ERROR;
 
+import io.github.ma1uta.jxclient.Client;
 import io.github.ma1uta.jxclient.matrix.PlainRequestFactory;
 import io.github.ma1uta.jxclient.ui.AccountViewController;
 import io.github.ma1uta.jxclient.ui.LoginViewController;
@@ -9,15 +10,19 @@ import io.github.ma1uta.matrix.Id;
 import io.github.ma1uta.matrix.client.MatrixClient;
 import io.github.ma1uta.matrix.client.model.account.WhoamiResponse;
 import io.github.ma1uta.matrix.client.model.auth.LoginResponse;
+import io.github.ma1uta.matrix.client.model.sync.SyncResponse;
 import javafx.application.Platform;
+import javafx.concurrent.ScheduledService;
 import javafx.concurrent.Service;
 import javafx.concurrent.Task;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
 import javafx.scene.control.Tab;
-import javafx.scene.layout.StackPane;
+import javafx.util.Duration;
 
 import java.io.IOException;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.util.Random;
 import java.util.ResourceBundle;
 import java.util.prefs.BackingStoreException;
@@ -28,7 +33,6 @@ public class Account {
     private System.Logger LOGGER;
 
     private Tab accountTab;
-    private StackPane accountLayer;
     private Parent loadingView;
 
     private AccountViewController accountViewController;
@@ -44,7 +48,9 @@ public class Account {
     private String userId;
     private String deviceId;
 
-    private AccountModeService accountModeService;
+    private AccountModeService accountModeService = new AccountModeService();
+    private Service<Void> initialSync;
+    private ScheduledService<Void> syncLoop;
 
     public void init(Preferences accountNode, ResourceBundle i18n) {
         init(accountNode.get("homeserver", null), accountNode.get("deviceId", null), accountNode.get("token", null), i18n);
@@ -58,42 +64,72 @@ public class Account {
         return accountTab;
     }
 
+    public boolean isStub() {
+        return this.deviceId == null;
+    }
+
     private void showAccountView() {
-        loadingView.setVisible(false);
-        if (loadingView != null) {
-            loadingView.setVisible(false);
-        }
-        accountView.setVisible(true);
         accountTab.setText(userId);
-        accountLayer.layout();
+        accountTab.setContent(accountView);
+        accountView.layout();
+        Client.getInstance().addStubAccount();
     }
 
     private void showLoginView() {
-        loadingView.setVisible(false);
-        accountView.setVisible(false);
         Parent loginView = loginView();
-        accountLayer.getChildren().add(loginView);
-        loginView.setVisible(true);
+        accountTab.setContent(loginView);
+        loginView.layout();
         accountTab.setText(i18n.getString("account.login"));
-        accountLayer.layout();
     }
 
     private void init(String homeserver, String deviceId, String token, ResourceBundle i18n) {
         this.i18n = i18n;
         accountTab = new Tab();
         accountTab.setClosable(false);
-        accountLayer = new StackPane();
-        accountLayer.getChildren().addAll(loadingView(), accountView());
-        accountTab.setContent(accountLayer);
-        accountView.setVisible(false);
-        accountModeService = new AccountModeService(this);
-        accountModeService.updateDeviceInfo(homeserver, deviceId, token);
-        accountModeService.start();
+        accountTab.setContent(loadingView());
+        accountView();
+        if (homeserver == null || deviceId == null || token == null) {
+            anonymousMode();
+        } else {
+            accountModeService.updateDeviceInfo(homeserver, deviceId, token);
+            accountModeService.start();
+        }
+        initialSync = new Service<>() {
+            @Override
+            protected Task<Void> createTask() {
+                return new Task<>() {
+                    @Override
+                    protected Void call() throws Exception {
+                        Account.this.parseInitialSync(Account.this.client.sync().sync(null, null, true, null, 0L).join());
+                        return null;
+                    }
+                };
+            }
+        };
+        syncLoop = new ScheduledService<>() {
+            @Override
+            protected Task<Void> createTask() {
+                return new Task<>() {
+                    @Override
+                    protected Void call() throws Exception {
+                        Account.this.parseSync(Account.this.client.sync().sync(
+                            "",
+                            "",
+                            true,
+                            "",
+                            0L
+                        ).join());
+                        return null;
+                    }
+                };
+            }
+        };
+        syncLoop.setPeriod(Duration.seconds(30D));
     }
 
     private void syncPreferences(String homeserver, String deviceId, String token) {
         var root = Preferences.userRoot();
-        Preferences node = root.node("jxclient/accounts/" + this.userId);
+        Preferences node = root.node("jxclient/accounts/" + URLEncoder.encode(this.userId, StandardCharsets.UTF_8));
         node.put("homeserver", homeserver);
         node.put("token", token);
         node.put("deviceId", deviceId);
@@ -105,9 +141,9 @@ public class Account {
     }
 
     private void userMode(String homeserver, String deviceId, String token) {
-        this.client = new MatrixClient.Builder().requestFactory(new PlainRequestFactory(homeserver)).accessToken(token).build();
-        this.client.getDefaultParams().deviceId(deviceId);
         try {
+            this.client = new MatrixClient.Builder().requestFactory(new PlainRequestFactory(homeserver)).accessToken(token).build();
+            this.client.getDefaultParams().deviceId(deviceId);
             this.client.account().whoami().thenApply(WhoamiResponse::getUserId).thenAccept(userId -> {
                 this.userId = userId;
                 this.deviceId = deviceId;
@@ -124,7 +160,11 @@ public class Account {
     private void anonymousMode() {
         this.userId = null;
         this.LOGGER = System.getLogger("ACCOUNT-ANONYMOUS-" + new Random().nextInt());
-        Platform.runLater(this::showLoginView);
+        if (Platform.isFxApplicationThread()) {
+            showLoginView();
+        } else {
+            Platform.runLater(this::showLoginView);
+        }
     }
 
     private Parent loadingView() {
@@ -154,7 +194,7 @@ public class Account {
         }
     }
 
-    private Parent accountView() {
+    private void accountView() {
         if (accountView == null) {
             try {
                 FXMLLoader loader = new FXMLLoader(getClass().getResource("/io/github/ma1uta/jxclient/ui/Account.fxml"), i18n);
@@ -165,7 +205,6 @@ public class Account {
                 e.printStackTrace();
             }
         }
-        return accountView;
     }
 
     public void updateToken(LoginResponse loginResponse) {
@@ -179,28 +218,26 @@ public class Account {
         }
     }
 
+    private void parseInitialSync(SyncResponse syncResponse) {
+
+    }
+
+    private void parseSync(SyncResponse syncResponse) {
+
+    }
+
     public class AccountModeService extends Service<Void> {
 
-        private final Account account;
         private String homeserver;
         private String deviceId;
         private String token;
-
-        AccountModeService(Account account) {
-            this.account = account;
-        }
 
         @Override
         protected Task<Void> createTask() {
             return new Task<>() {
                 @Override
                 protected Void call() throws Exception {
-                    if (homeserver == null || homeserver.isBlank() || token == null || token.isBlank()) {
-                        account.anonymousMode();
-                    } else {
-                        account.userMode(homeserver, deviceId, token);
-                    }
-
+                    Account.this.userMode(homeserver, deviceId, token);
                     return null;
                 }
             };

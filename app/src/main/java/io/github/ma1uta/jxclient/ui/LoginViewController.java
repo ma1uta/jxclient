@@ -6,12 +6,14 @@ import io.github.ma1uta.matrix.client.MatrixClient;
 import io.github.ma1uta.matrix.client.model.auth.LoginRequest;
 import io.github.ma1uta.matrix.client.model.auth.LoginResponse;
 import io.github.ma1uta.matrix.client.model.auth.UserIdentifier;
+import javafx.application.Platform;
 import javafx.concurrent.Service;
 import javafx.concurrent.Task;
 import javafx.concurrent.Worker;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.scene.control.PasswordField;
+import javafx.scene.control.ProgressBar;
 import javafx.scene.control.TextField;
 import org.controlsfx.dialog.ExceptionDialog;
 import org.controlsfx.validation.Severity;
@@ -36,6 +38,9 @@ public class LoginViewController implements Initializable {
 
     @FXML
     private PasswordField passwordField;
+
+    @FXML
+    private ProgressBar loginProgress;
 
     private Account account;
 
@@ -75,6 +80,7 @@ public class LoginViewController implements Initializable {
         };
         loginResponseService.setOnSucceeded(event -> account.updateToken((LoginResponse) event.getSource().getValue()));
         loginResponseService.setOnFailed(event -> {
+            Platform.runLater(() -> editable(true));
             Throwable exception = event.getSource().getException();
             LOGGER.log(System.Logger.Level.ERROR, "Failed to login.", exception);
             new ExceptionDialog(exception).show();
@@ -85,10 +91,18 @@ public class LoginViewController implements Initializable {
         this.account = account;
     }
 
+    private void editable(boolean editable) {
+        loginProgress.setVisible(!editable);
+        localpartField.setEditable(editable);
+        serverField.setEditable(editable);
+        passwordField.setEditable(editable);
+    }
+
     /**
      * LoginViewController action.
      */
     public void login() {
+        editable(false);
         if (!loginResponseService.isRunning()) {
             if (loginResponseService.getState() != Worker.State.READY) {
                 loginResponseService.reset();

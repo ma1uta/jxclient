@@ -1,9 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<?import javafx.scene.layout.BorderPane?>
 <?import javafx.scene.control.ProgressBar?>
+<?import javafx.scene.layout.BorderPane?>
 <BorderPane xmlns="http://javafx.com/javafx">
-    <ProgressBar
-            progress="-Infinity"
-    />
+    <center>
+        <ProgressBar
+                progress="-Infinity"
+        />
+    </center>
 </BorderPane>

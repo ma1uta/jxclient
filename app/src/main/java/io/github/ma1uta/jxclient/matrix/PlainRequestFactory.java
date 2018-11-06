@@ -40,6 +40,7 @@ import java.security.AccessController;
 import java.security.PrivilegedAction;
 import java.util.Arrays;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.function.BiFunction;
@@ -63,7 +64,7 @@ public class PlainRequestFactory implements RequestFactory {
     private final EventContentDeserializer eventContentDeserializer = new EventContentDeserializer();
 
     public PlainRequestFactory(String homeserverUrl) {
-        this.homeserverUrl = homeserverUrl;
+        this.homeserverUrl = Objects.requireNonNull(homeserverUrl, "Homeserver must be specified.");
         this.httpClient = HttpClient.newHttpClient();
         this.mapper = new ObjectMapper();
 

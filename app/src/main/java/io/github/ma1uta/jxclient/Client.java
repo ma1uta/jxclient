@@ -11,6 +11,7 @@ import javafx.stage.Stage;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.ResourceBundle;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.prefs.BackingStoreException;
 import java.util.prefs.Preferences;
 
@@ -52,7 +53,13 @@ public class Client extends Application {
         for (Account account : accountList) {
             rootController.addAccount(account);
         }
+        rootStage.setTitle(i18nBundle.getString("app.title"));
         rootStage.show();
+        if (accountList.size() == 1) {
+            accountList.get(0).getTab().getContent().requestFocus();
+        } else {
+            accountList.get(accountList.size() - 1).getTab().getContent().requestFocus();
+        }
     }
 
     private void loadAccounts() throws BackingStoreException {
@@ -61,12 +68,33 @@ public class Client extends Application {
         for (var accountName : accounts.childrenNames()) {
             var account = new Account();
             account.init(accounts.node(accountName), i18nBundle);
-            accountList.add(account);
+            accountList.add(0, account);
         }
-        var account = new Account();
-        account.init(i18nBundle);
-        accountList.add(account);
-        accountList.get(accountList.size() - (accountList.size() == 1 ? 1 : 2)).getTab().getContent().requestFocus();
+        if (accountList.isEmpty()) {
+            addStubAccount();
+        }
+    }
+
+    private final AtomicBoolean barrier = new AtomicBoolean(false);
+
+    public void addStubAccount() {
+        if (!accountList.get(accountList.size() - 1).isStub()) {
+            synchronized (barrier) {
+                if (barrier.get()) {
+                    return;
+                }
+                barrier.set(true);
+            }
+            try {
+                var account = new Account();
+                account.init(i18nBundle);
+                accountList.add(account);
+                MainViewController controller = rootFormLoader.getController();
+                controller.addAccount(account);
+            } finally {
+                barrier.set(false);
+            }
+        }
     }
 }
 

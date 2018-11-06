@@ -5,7 +5,7 @@
             <pattern>%d{yyyy-MM-dd HH:mm:ss:SSS} %5p %t %c{2}:%L - %m%n</pattern>
         </encoder>
     </appender>
-    <logger name="PLAIN_REQUEST_FACTORY" level="ALL" additivity="false"/>
+    <logger name="PLAIN_REQUEST_FACTORY" level="DEBUG" additivity="false"/>
     <root level="WARNING">
         <appender-ref ref="stdout"/>
     </root>

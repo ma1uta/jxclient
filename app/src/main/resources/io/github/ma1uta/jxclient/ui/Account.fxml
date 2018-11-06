@@ -6,12 +6,6 @@
 <?import javafx.scene.layout.Pane?>
 <SplitPane
         dividerPositions="0.3"
-        maxHeight="-Infinity"
-        maxWidth="-Infinity"
-        minHeight="-Infinity"
-        minWidth="-Infinity"
-        prefHeight="700.0"
-        prefWidth="1000.0"
         xmlns="http://javafx.com/javafx/8.0.172-ea"
         xmlns:fx="http://javafx.com/fxml/1"
         fx:controller="io.github.ma1uta.jxclient.ui.AccountViewController"
