@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.ScrollPane?>
+<?import javafx.scene.control.SplitPane?>
+<?import javafx.scene.layout.BorderPane?>
+<?import javafx.scene.layout.Pane?>
+<SplitPane
+        dividerPositions="0.3"
+        maxHeight="-Infinity"
+        maxWidth="-Infinity"
+        minHeight="-Infinity"
+        minWidth="-Infinity"
+        prefHeight="700.0"
+        prefWidth="1000.0"
+        xmlns="http://javafx.com/javafx/8.0.172-ea"
+        xmlns:fx="http://javafx.com/fxml/1"
+>
+    <BorderPane
+            prefHeight="200.0"
+            prefWidth="200.0"
+    >
+        <center>
+            <ScrollPane
+                    prefHeight="200.0"
+                    prefWidth="200.0"
+                    BorderPane.alignment="CENTER"
+            />
+        </center>
+        <top>
+            <Pane
+                    prefHeight="47.0"
+                    prefWidth="299.0"
+                    BorderPane.alignment="CENTER"
+            />
+        </top>
+    </BorderPane>
+    <BorderPane
+            prefHeight="200.0"
+            prefWidth="200.0"
+    >
+        <center>
+            <ScrollPane
+                    prefHeight="200.0"
+                    prefWidth="200.0"
+                    BorderPane.alignment="CENTER"
+            />
+        </center>
+        <bottom>
+            <Pane
+                    prefHeight="89.0"
+                    prefWidth="695.0"
+                    BorderPane.alignment="CENTER"
+            />
+        </bottom>
+    </BorderPane>
+</SplitPane>
