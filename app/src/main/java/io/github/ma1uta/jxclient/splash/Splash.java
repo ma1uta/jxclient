@@ -34,8 +34,8 @@ public class Splash extends Preloader {
     }
 
     @Override
-    public void handleStateChangeNotification(StateChangeNotification info) {
-        if (info.getType() == StateChangeNotification.Type.BEFORE_START) {
+    public void handleApplicationNotification(PreloaderNotification info) {
+        if (info instanceof FinishLoadingNotification) {
             stage.hide();
         }
     }

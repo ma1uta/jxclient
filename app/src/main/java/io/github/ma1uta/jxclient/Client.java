@@ -1,6 +1,7 @@
 package io.github.ma1uta.jxclient;
 
 import io.github.ma1uta.jxclient.account.Account;
+import io.github.ma1uta.jxclient.splash.FinishLoadingNotification;
 import io.github.ma1uta.jxclient.ui.MainViewController;
 import javafx.application.Application;
 import javafx.fxml.FXMLLoader;
@@ -55,6 +56,7 @@ public class Client extends Application {
         }
         rootStage.setTitle(i18nBundle.getString("app.title"));
         rootStage.show();
+        notifyPreloader(new FinishLoadingNotification());
         if (accountList.size() == 1) {
             accountList.get(0).getTab().getContent().requestFocus();
         } else {
