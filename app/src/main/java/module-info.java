@@ -19,5 +19,4 @@ module jxclient {
     opens io.github.ma1uta.jxclient to javafx.graphics;
     opens io.github.ma1uta.jxclient.ui to javafx.fxml;
 
-    provides System.LoggerFinder with io.github.ma1uta.jxclient.log.Slf4jLoggerFinder;
 }

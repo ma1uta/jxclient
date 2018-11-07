@@ -2,6 +2,9 @@ package io.github.ma1uta.jxclient.splash;
 
 import javafx.application.Preloader;
 
+/**
+ * Error notification.
+ */
 public class ErrorNotification implements Preloader.PreloaderNotification {
 
     private final Throwable throwable;

@@ -28,9 +28,14 @@ import java.util.ResourceBundle;
 import java.util.prefs.BackingStoreException;
 import java.util.prefs.Preferences;
 
+/**
+ * Matrix account.
+ */
 public class Account {
 
-    private System.Logger LOGGER;
+    private static final double DEFAULT_SYNC_PERIOD = 30D;
+
+    private System.Logger logger;
 
     private Tab accountTab;
     private Parent loadingView;
@@ -52,34 +57,23 @@ public class Account {
     private Service<Void> initialSync;
     private ScheduledService<Void> syncLoop;
 
+    /**
+     * Initialize account.
+     *
+     * @param accountNode account preferences.
+     * @param i18n        localized messages.
+     */
     public void init(Preferences accountNode, ResourceBundle i18n) {
         init(accountNode.get("homeserver", null), accountNode.get("deviceId", null), accountNode.get("token", null), i18n);
     }
 
+    /**
+     * Initialize anonymous mode.
+     *
+     * @param i18n localized messages.
+     */
     public void init(ResourceBundle i18n) {
         init(null, null, null, i18n);
-    }
-
-    public Tab getTab() {
-        return accountTab;
-    }
-
-    public boolean isStub() {
-        return this.deviceId == null;
-    }
-
-    private void showAccountView() {
-        accountTab.setText(userId);
-        accountTab.setContent(accountView);
-        accountView.layout();
-        Client.getInstance().addStubAccount();
-    }
-
-    private void showLoginView() {
-        Parent loginView = loginView();
-        accountTab.setContent(loginView);
-        loginView.layout();
-        accountTab.setText(i18n.getString("account.login"));
     }
 
     private void init(String homeserver, String deviceId, String token, ResourceBundle i18n) {
@@ -124,7 +118,29 @@ public class Account {
                 };
             }
         };
-        syncLoop.setPeriod(Duration.seconds(30D));
+        syncLoop.setPeriod(Duration.seconds(DEFAULT_SYNC_PERIOD));
+    }
+
+    public Tab getTab() {
+        return accountTab;
+    }
+
+    public boolean isStub() {
+        return this.deviceId == null;
+    }
+
+    private void showAccountView() {
+        accountTab.setText(userId);
+        accountTab.setContent(accountView);
+        accountView.layout();
+        Client.getInstance().addStubAccount();
+    }
+
+    private void showLoginView() {
+        Parent loginView = loginView();
+        accountTab.setContent(loginView);
+        loginView.layout();
+        accountTab.setText(i18n.getString("account.login"));
     }
 
     private void syncPreferences(String homeserver, String deviceId, String token) {
@@ -147,7 +163,7 @@ public class Account {
             this.client.account().whoami().thenApply(WhoamiResponse::getUserId).thenAccept(userId -> {
                 this.userId = userId;
                 this.deviceId = deviceId;
-                this.LOGGER = System.getLogger("ACCOUNT-" + userId);
+                this.logger = System.getLogger("ACCOUNT-" + userId);
                 syncPreferences(homeserver, deviceId, token);
                 Platform.runLater(this::showAccountView);
             });
@@ -159,7 +175,7 @@ public class Account {
 
     private void anonymousMode() {
         this.userId = null;
-        this.LOGGER = System.getLogger("ACCOUNT-ANONYMOUS-" + new Random().nextInt());
+        this.logger = System.getLogger("ACCOUNT-ANONYMOUS-" + new Random().nextInt());
         if (Platform.isFxApplicationThread()) {
             showLoginView();
         } else {
@@ -207,6 +223,11 @@ public class Account {
         }
     }
 
+    /**
+     * Update account credentials.
+     *
+     * @param loginResponse account credentials.
+     */
     public void updateToken(LoginResponse loginResponse) {
         if (!accountModeService.isRunning()) {
             accountModeService.reset();
@@ -226,6 +247,9 @@ public class Account {
 
     }
 
+    /**
+     * Account credentials verification service.
+     */
     public class AccountModeService extends Service<Void> {
 
         private String homeserver;

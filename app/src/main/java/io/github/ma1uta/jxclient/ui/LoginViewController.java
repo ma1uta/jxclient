@@ -66,13 +66,13 @@ public class LoginViewController implements Initializable {
                 return new Task<>() {
                     @Override
                     protected LoginResponse call() throws Exception {
-                        var loginClient = new MatrixClient.Builder().requestFactory(new PlainRequestFactory(serverField.getText())).build();
                         var request = new LoginRequest();
                         UserIdentifier userIdentifier = new UserIdentifier();
                         userIdentifier.setUser(localpartField.getText());
                         request.setIdentifier(userIdentifier);
                         request.setPassword(passwordField.getText().toCharArray());
                         request.setInitialDeviceDisplayName("jxclient");
+                        var loginClient = new MatrixClient.Builder().requestFactory(new PlainRequestFactory(serverField.getText())).build();
                         return loginClient.auth().login(localpartField.getText(), passwordField.getText().toCharArray()).join();
                     }
                 };

@@ -6,6 +6,9 @@ import javafx.fxml.Initializable;
 import java.net.URL;
 import java.util.ResourceBundle;
 
+/**
+ * Main account controller.
+ */
 public class AccountViewController implements Initializable {
 
     private Account account;

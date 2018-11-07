@@ -38,7 +38,7 @@ public class Client extends Application {
     @Override
     public void init() throws Exception {
         app = this;
-        i18nBundle = ResourceBundle.getBundle("/i18n/messages");
+        i18nBundle = ResourceBundle.getBundle("i18n/messages");
         rootFormLoader = new FXMLLoader(getClass().getResource("/io/github/ma1uta/jxclient/ui/Main.fxml"), i18nBundle);
         rootForm = rootFormLoader.load();
         loadAccounts();
@@ -77,6 +77,9 @@ public class Client extends Application {
 
     private final AtomicBoolean barrier = new AtomicBoolean(false);
 
+    /**
+     * Add tab to add a new account.
+     */
     public void addStubAccount() {
         if (!accountList.get(accountList.size() - 1).isStub()) {
             synchronized (barrier) {

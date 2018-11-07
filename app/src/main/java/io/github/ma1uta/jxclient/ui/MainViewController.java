@@ -25,6 +25,11 @@ public class MainViewController implements Initializable {
 
     }
 
+    /**
+     * Add new account.
+     *
+     * @param account the new account.
+     */
     public void addAccount(Account account) {
         accounts.add(account);
         tabPane.getTabs().add(account.getTab());
