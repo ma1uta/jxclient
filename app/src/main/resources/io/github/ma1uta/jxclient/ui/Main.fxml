@@ -1,12 +1,39 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
+<?import javafx.scene.control.Button?>
 <?import javafx.scene.control.TabPane?>
+<?import javafx.scene.layout.AnchorPane?>
 <?import javafx.scene.layout.BorderPane?>
+<?import javafx.scene.layout.HBox?>
+<?import org.kordamp.ikonli.javafx.FontIcon?>
 <BorderPane xmlns="http://javafx.com/javafx"
             xmlns:fx="http://javafx.com/fxml"
             fx:controller="io.github.ma1uta.jxclient.ui.MainViewController"
             prefHeight="400.0" prefWidth="600.0">
     <center>
-        <TabPane fx:id="tabPane"/>
+        <AnchorPane>
+            <TabPane
+                    AnchorPane.topAnchor="0"
+                    AnchorPane.bottomAnchor="0"
+                    AnchorPane.leftAnchor="0"
+                    AnchorPane.rightAnchor="0"
+                    fx:id="tabPane"
+            />
+            <HBox
+                    AnchorPane.topAnchor="5"
+                    AnchorPane.rightAnchor="5"
+            >
+                <Button fx:id="addAccountButton">
+                    <graphic>
+                        <FontIcon iconLiteral="gmi-add"/>
+                    </graphic>
+                </Button>
+                <Button fx:id="appSettingsButton">
+                    <graphic>
+                        <FontIcon iconLiteral="gmi-settings"/>
+                    </graphic>
+                </Button>
+            </HBox>
+        </AnchorPane>
     </center>
 </BorderPane>

@@ -1,6 +1,22 @@
+/*
+ * Copyright sablintolya@gmail.com
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package io.github.ma1uta.jxclient;
 
-import io.github.ma1uta.jxclient.account.Account;
+import io.github.ma1uta.jxclient.matrix.MatrixAccount;
 import io.github.ma1uta.jxclient.splash.FinishLoadingNotification;
 import io.github.ma1uta.jxclient.ui.MainViewController;
 import javafx.application.Application;
@@ -12,7 +28,6 @@ import javafx.stage.Stage;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.ResourceBundle;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.prefs.BackingStoreException;
 import java.util.prefs.Preferences;
 
@@ -28,7 +43,7 @@ public class Client extends Application {
     private Stage rootStage;
     private Parent rootForm;
     private FXMLLoader rootFormLoader;
-    private List<Account> accountList = new ArrayList<>();
+    private List<MatrixAccount> accountList = new ArrayList<>();
 
     private ResourceBundle i18nBundle;
 
@@ -51,55 +66,53 @@ public class Client extends Application {
         var scene = new Scene(rootForm);
         rootStage.setScene(scene);
         MainViewController rootController = rootFormLoader.getController();
-        for (Account account : accountList) {
+        for (MatrixAccount account : accountList) {
             rootController.addAccount(account);
         }
         rootStage.setTitle(i18nBundle.getString("app.title"));
         rootStage.show();
+        rootController.select(0);
         notifyPreloader(new FinishLoadingNotification());
-        if (accountList.size() == 1) {
-            accountList.get(0).getTab().getContent().requestFocus();
-        } else {
-            accountList.get(accountList.size() - 1).getTab().getContent().requestFocus();
-        }
     }
 
     private void loadAccounts() throws BackingStoreException {
         var root = Preferences.userRoot();
         var accounts = root.node("jxclient/accounts");
         for (var accountName : accounts.childrenNames()) {
-            var account = new Account();
+            var account = new MatrixAccount();
             account.init(accounts.node(accountName), i18nBundle);
             accountList.add(0, account);
         }
         if (accountList.isEmpty()) {
-            addStubAccount();
+            addNewAccount(false);
         }
     }
 
-    private final AtomicBoolean barrier = new AtomicBoolean(false);
-
     /**
      * Add tab to add a new account.
+     *
+     * @param addToController either to add new account to controller.
      */
-    public void addStubAccount() {
+    public void addNewAccount(boolean addToController) {
         if (!accountList.get(accountList.size() - 1).isStub()) {
-            synchronized (barrier) {
-                if (barrier.get()) {
-                    return;
-                }
-                barrier.set(true);
-            }
-            try {
-                var account = new Account();
-                account.init(i18nBundle);
-                accountList.add(account);
+            var account = new MatrixAccount();
+            account.init(i18nBundle);
+            accountList.add(account);
+            if (addToController) {
                 MainViewController controller = rootFormLoader.getController();
                 controller.addAccount(account);
-            } finally {
-                barrier.set(false);
+                controller.select(accountList.size() - 1);
             }
         }
+    }
+
+    /**
+     * Remove account.
+     *
+     * @param matrixAccount The account to remove.
+     */
+    public void removeAccount(MatrixAccount matrixAccount) {
+        accountList.remove(matrixAccount);
     }
 }
 

@@ -16,6 +16,9 @@ module jxclient {
 
     requires com.fasterxml.jackson.databind;
 
+    requires org.kordamp.ikonli.material;
+    requires org.kordamp.ikonli.javafx;
+
     opens io.github.ma1uta.jxclient to javafx.graphics;
     opens io.github.ma1uta.jxclient.ui to javafx.fxml;
 

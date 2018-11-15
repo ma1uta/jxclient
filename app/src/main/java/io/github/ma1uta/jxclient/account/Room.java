@@ -14,12 +14,36 @@
  * limitations under the License.
  */
 
-package io.github.ma1uta.jxclient.splash;
+package io.github.ma1uta.jxclient.account;
 
-import javafx.application.Preloader;
+import javafx.beans.property.SimpleStringProperty;
 
 /**
- * Notification to hide the Preloader.
+ * Room.
  */
-public class FinishLoadingNotification implements Preloader.PreloaderNotification {
+public class Room {
+
+    private SimpleStringProperty topic = new SimpleStringProperty();
+
+    public String getTopic() {
+        return topic.getValue();
+    }
+
+    /**
+     * Set a topic.
+     *
+     * @param topic the room topic.
+     */
+    public void setTopic(String topic) {
+        this.topic.setValue(topic);
+    }
+
+    /**
+     * Topic property.
+     *
+     * @return The topic property.
+     */
+    public SimpleStringProperty topicProperty() {
+        return topic;
+    }
 }

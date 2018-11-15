@@ -1,9 +1,24 @@
-package io.github.ma1uta.jxclient.account;
+/*
+ * Copyright sablintolya@gmail.com
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package io.github.ma1uta.jxclient.matrix;
 
 import static java.lang.System.Logger.Level.ERROR;
 
 import io.github.ma1uta.jxclient.Client;
-import io.github.ma1uta.jxclient.matrix.PlainRequestFactory;
 import io.github.ma1uta.jxclient.ui.AccountViewController;
 import io.github.ma1uta.jxclient.ui.LoginViewController;
 import io.github.ma1uta.matrix.Id;
@@ -17,8 +32,12 @@ import javafx.concurrent.Service;
 import javafx.concurrent.Task;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
+import javafx.scene.control.Alert;
+import javafx.scene.control.ButtonType;
 import javafx.scene.control.Tab;
 import javafx.util.Duration;
+import org.kordamp.ikonli.javafx.FontIcon;
+import org.kordamp.ikonli.material.Material;
 
 import java.io.IOException;
 import java.net.URLEncoder;
@@ -31,7 +50,7 @@ import java.util.prefs.Preferences;
 /**
  * Matrix account.
  */
-public class Account {
+public class MatrixAccount {
 
     private static final double DEFAULT_SYNC_PERIOD = 30D;
 
@@ -79,7 +98,19 @@ public class Account {
     private void init(String homeserver, String deviceId, String token, ResourceBundle i18n) {
         this.i18n = i18n;
         accountTab = new Tab();
-        accountTab.setClosable(false);
+        accountTab.setOnCloseRequest(event -> {
+            if (isStub()) {
+                return;
+            }
+            var closeAccountDialog = new Alert(Alert.AlertType.CONFIRMATION, i18n.getString("account.close.title"), ButtonType.YES,
+                ButtonType.NO);
+            closeAccountDialog.setGraphic(FontIcon.of(Material.WARNING));
+            closeAccountDialog.showAndWait();
+            if (ButtonType.NO == closeAccountDialog.getResult()) {
+                event.consume();
+            }
+        });
+        accountTab.setOnClosed(event -> Client.getInstance().removeAccount(MatrixAccount.this));
         accountTab.setContent(loadingView());
         accountView();
         if (homeserver == null || deviceId == null || token == null) {
@@ -94,7 +125,7 @@ public class Account {
                 return new Task<>() {
                     @Override
                     protected Void call() throws Exception {
-                        Account.this.parseInitialSync(Account.this.client.sync().sync(null, null, true, null, 0L).join());
+                        MatrixAccount.this.parseInitialSync(MatrixAccount.this.client.sync().sync(null, null, true, null, 0L).join());
                         return null;
                     }
                 };
@@ -106,7 +137,7 @@ public class Account {
                 return new Task<>() {
                     @Override
                     protected Void call() throws Exception {
-                        Account.this.parseSync(Account.this.client.sync().sync(
+                        MatrixAccount.this.parseSync(MatrixAccount.this.client.sync().sync(
                             "",
                             "",
                             true,
@@ -133,7 +164,6 @@ public class Account {
         accountTab.setText(userId);
         accountTab.setContent(accountView);
         accountView.layout();
-        Client.getInstance().addStubAccount();
     }
 
     private void showLoginView() {
@@ -248,7 +278,7 @@ public class Account {
     }
 
     /**
-     * Account credentials verification service.
+     * MatrixAccount credentials verification service.
      */
     public class AccountModeService extends Service<Void> {
 
@@ -261,7 +291,7 @@ public class Account {
             return new Task<>() {
                 @Override
                 protected Void call() throws Exception {
-                    Account.this.userMode(homeserver, deviceId, token);
+                    MatrixAccount.this.userMode(homeserver, deviceId, token);
                     return null;
                 }
             };
