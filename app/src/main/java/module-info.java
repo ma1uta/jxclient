@@ -8,6 +8,8 @@ module jxclient {
     requires java.prefs;
     requires java.net.http;
 
+    requires java.desktop;
+
     requires matrix.common.api;
     requires matrix.client.api;
     requires matrix.client.impl;

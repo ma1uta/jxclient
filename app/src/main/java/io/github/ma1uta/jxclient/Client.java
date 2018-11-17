@@ -20,16 +20,26 @@ import io.github.ma1uta.jxclient.matrix.MatrixAccount;
 import io.github.ma1uta.jxclient.splash.FinishLoadingNotification;
 import io.github.ma1uta.jxclient.ui.MainViewController;
 import javafx.application.Application;
+import javafx.application.Platform;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.stage.Stage;
 
+import java.awt.AWTException;
+import java.awt.MenuItem;
+import java.awt.PopupMenu;
+import java.awt.SystemTray;
+import java.awt.Toolkit;
+import java.awt.TrayIcon;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.ResourceBundle;
 import java.util.prefs.BackingStoreException;
 import java.util.prefs.Preferences;
+import javax.imageio.ImageIO;
+import javax.swing.SwingUtilities;
 
 /**
  * Jx client.
@@ -53,11 +63,13 @@ public class Client extends Application {
 
     @Override
     public void init() throws Exception {
+        Platform.setImplicitExit(false);
         app = this;
         i18nBundle = ResourceBundle.getBundle("i18n/messages");
         rootFormLoader = new FXMLLoader(getClass().getResource("/io/github/ma1uta/jxclient/ui/Main.fxml"), i18nBundle);
         rootForm = rootFormLoader.load();
         loadAccounts();
+        initTray();
     }
 
     @Override
@@ -113,6 +125,48 @@ public class Client extends Application {
      */
     public void removeAccount(MatrixAccount matrixAccount) {
         accountList.remove(matrixAccount);
+    }
+
+    private void initTray() {
+        Toolkit.getDefaultToolkit();
+        if (SystemTray.isSupported()) {
+            SwingUtilities.invokeLater(() -> {
+                try {
+                    var popupMenu = new PopupMenu();
+
+                    var showHide = new MenuItem(i18nBundle.getString("app.tray.showHide"));
+                    popupMenu.add(showHide);
+                    showHide.addActionListener(e -> toggleVisibility());
+
+                    var quit = new MenuItem(i18nBundle.getString("app.tray.quit"));
+                    popupMenu.add(quit);
+
+                    var trayIcon = new TrayIcon(ImageIO.read(getClass().getResourceAsStream("/tray.png")), "jxclient", popupMenu);
+                    SystemTray tray = SystemTray.getSystemTray();
+
+                    quit.addActionListener(e -> {
+                        Platform.exit();
+                        tray.remove(trayIcon);
+                        System.exit(0);
+                    });
+
+                    trayIcon.addActionListener(e -> toggleVisibility());
+                    tray.add(trayIcon);
+                } catch (AWTException | IOException e) {
+                    e.printStackTrace();
+                }
+            });
+        }
+    }
+
+    private void toggleVisibility() {
+        Platform.runLater(() -> {
+            if (rootStage.isShowing()) {
+                rootStage.hide();
+            } else {
+                rootStage.show();
+            }
+        });
     }
 }
 

@@ -24,16 +24,14 @@
             >
                 <VBox
                         fx:id="roomList"
-                >
-
-                </VBox>
+                />
             </ScrollPane>
         </center>
         <top>
             <Pane
                     fx:id="accountSettings"
-                    prefHeight="47.0"
-                    prefWidth="299.0"
+                    prefHeight="30.0"
+                    prefWidth="200.0"
                     BorderPane.alignment="CENTER"
             />
         </top>
