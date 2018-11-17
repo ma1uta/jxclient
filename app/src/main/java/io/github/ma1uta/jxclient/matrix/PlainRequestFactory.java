@@ -58,6 +58,7 @@ import java.util.Arrays;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.function.BiFunction;
 import java.util.function.Function;
@@ -79,9 +80,9 @@ public class PlainRequestFactory implements RequestFactory {
     private final ObjectMapper mapper;
     private final EventContentDeserializer eventContentDeserializer = new EventContentDeserializer();
 
-    public PlainRequestFactory(String homeserverUrl) {
+    public PlainRequestFactory(String homeserverUrl, ExecutorService executorService) {
         this.homeserverUrl = Objects.requireNonNull(homeserverUrl, "Homeserver must be specified.");
-        this.httpClient = HttpClient.newHttpClient();
+        this.httpClient = HttpClient.newBuilder().executor(executorService).build();
         this.mapper = new ObjectMapper();
 
         var eventModule = new SimpleModule();
@@ -212,8 +213,9 @@ public class PlainRequestFactory implements RequestFactory {
         if (!params.getQueryParams().isEmpty()) {
             urlBuilder.append("?");
             for (Map.Entry<String, String> parameterEntry : params.getQueryParams().entrySet()) {
-                if (skipAmp) {
+                if (!skipAmp) {
                     urlBuilder.append("&");
+                } else {
                     skipAmp = false;
                 }
                 urlBuilder.append(parameterEntry.getKey()).append("=").append(parameterEntry.getValue());

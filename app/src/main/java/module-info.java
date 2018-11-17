@@ -19,7 +19,10 @@ module jxclient {
     requires org.kordamp.ikonli.material;
     requires org.kordamp.ikonli.javafx;
 
+    requires lmdbjava;
+
     opens io.github.ma1uta.jxclient to javafx.graphics;
     opens io.github.ma1uta.jxclient.ui to javafx.fxml;
+    opens io.github.ma1uta.jxclient.ui.message to javafx.fxml;
 
 }

@@ -27,6 +27,8 @@ import io.github.ma1uta.matrix.client.model.account.WhoamiResponse;
 import io.github.ma1uta.matrix.client.model.auth.LoginResponse;
 import io.github.ma1uta.matrix.client.model.sync.SyncResponse;
 import javafx.application.Platform;
+import javafx.beans.property.BooleanProperty;
+import javafx.beans.property.SimpleBooleanProperty;
 import javafx.concurrent.ScheduledService;
 import javafx.concurrent.Service;
 import javafx.concurrent.Task;
@@ -44,6 +46,8 @@ import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.Random;
 import java.util.ResourceBundle;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.prefs.BackingStoreException;
 import java.util.prefs.Preferences;
 
@@ -73,8 +77,12 @@ public class MatrixAccount {
     private String deviceId;
 
     private AccountModeService accountModeService = new AccountModeService();
-    private Service<Void> initialSync;
     private ScheduledService<Void> syncLoop;
+
+    private final BooleanProperty loading = new SimpleBooleanProperty(false);
+    private MediaDownloader downloader;
+
+    private ScheduledExecutorService executorService = Executors.newScheduledThreadPool(2);
 
     /**
      * Initialize account.
@@ -96,6 +104,7 @@ public class MatrixAccount {
     }
 
     private void init(String homeserver, String deviceId, String token, ResourceBundle i18n) {
+        this.downloader = new MediaDownloader(this);
         this.i18n = i18n;
         accountTab = new Tab();
         accountTab.setOnCloseRequest(event -> {
@@ -116,21 +125,10 @@ public class MatrixAccount {
         if (homeserver == null || deviceId == null || token == null) {
             anonymousMode();
         } else {
+            accountModeService.setExecutor(executorService);
             accountModeService.updateDeviceInfo(homeserver, deviceId, token);
             accountModeService.start();
         }
-        initialSync = new Service<>() {
-            @Override
-            protected Task<Void> createTask() {
-                return new Task<>() {
-                    @Override
-                    protected Void call() throws Exception {
-                        MatrixAccount.this.parseInitialSync(MatrixAccount.this.client.sync().sync(null, null, true, null, 0L).join());
-                        return null;
-                    }
-                };
-            }
-        };
         syncLoop = new ScheduledService<>() {
             @Override
             protected Task<Void> createTask() {
@@ -149,6 +147,7 @@ public class MatrixAccount {
                 };
             }
         };
+        syncLoop.setExecutor(executorService);
         syncLoop.setPeriod(Duration.seconds(DEFAULT_SYNC_PERIOD));
     }
 
@@ -156,8 +155,20 @@ public class MatrixAccount {
         return accountTab;
     }
 
+    public ScheduledExecutorService getExecutorService() {
+        return executorService;
+    }
+
+    public MatrixClient getClient() {
+        return client;
+    }
+
     public boolean isStub() {
         return this.deviceId == null;
+    }
+
+    public MediaDownloader getDownloader() {
+        return downloader;
     }
 
     private void showAccountView() {
@@ -188,7 +199,8 @@ public class MatrixAccount {
 
     private void userMode(String homeserver, String deviceId, String token) {
         try {
-            this.client = new MatrixClient.Builder().requestFactory(new PlainRequestFactory(homeserver)).accessToken(token).build();
+            this.client = new MatrixClient.Builder().requestFactory(new PlainRequestFactory(homeserver, executorService)).accessToken(token)
+                .build();
             this.client.getDefaultParams().deviceId(deviceId);
             this.client.account().whoami().thenApply(WhoamiResponse::getUserId).thenAccept(userId -> {
                 this.userId = userId;
@@ -196,6 +208,7 @@ public class MatrixAccount {
                 this.logger = System.getLogger("ACCOUNT-" + userId);
                 syncPreferences(homeserver, deviceId, token);
                 Platform.runLater(this::showAccountView);
+                this.client.sync().sync(null, null, true, null, 0L).thenAccept(this::parseInitialSync);
             });
         } catch (Exception e) {
             System.getLogger("CLIENT").log(ERROR, "Credentials are wrong.", e);
@@ -270,11 +283,49 @@ public class MatrixAccount {
     }
 
     private void parseInitialSync(SyncResponse syncResponse) {
-
+        setLoading(true);
+        try {
+            accountViewController.parse(syncResponse, this);
+        } catch (Exception e) {
+            e.printStackTrace();
+        } finally {
+            setLoading(false);
+        }
     }
 
     private void parseSync(SyncResponse syncResponse) {
+        if (!isLoading()) {
+            setLoading(true);
+            try {
+                accountViewController.parse(syncResponse, this);
+            } catch (Exception e) {
+                e.printStackTrace();
+            } finally {
+                setLoading(false);
+            }
+        }
+    }
 
+    public boolean isLoading() {
+        return loading.get();
+    }
+
+    /**
+     * Setter of the loading property.
+     *
+     * @param loading new value.
+     */
+    public void setLoading(boolean loading) {
+        this.loading.setValue(loading);
+    }
+
+    /**
+     * Loading property.
+     *
+     * @return loading property.
+     */
+    public BooleanProperty loadingProperty() {
+        return loading;
     }
 
     /**

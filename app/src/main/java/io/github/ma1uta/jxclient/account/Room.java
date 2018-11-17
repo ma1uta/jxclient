@@ -16,34 +16,120 @@
 
 package io.github.ma1uta.jxclient.account;
 
-import javafx.beans.property.SimpleStringProperty;
+import io.github.ma1uta.jxclient.matrix.MatrixAccount;
+import io.github.ma1uta.jxclient.ui.JoinedRoomItemViewController;
+import io.github.ma1uta.jxclient.ui.JoinedRoomViewController;
+import io.github.ma1uta.matrix.client.model.sync.JoinedRoom;
+import javafx.fxml.FXMLLoader;
+import javafx.scene.Node;
+
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.ResourceBundle;
+import java.util.function.Consumer;
 
 /**
- * Room.
+ * The room.
  */
 public class Room {
 
-    private SimpleStringProperty topic = new SimpleStringProperty();
+    private String roomId;
+    private final ResourceBundle i18n;
+    private final Consumer<Room> selectAction;
 
-    public String getTopic() {
-        return topic.getValue();
+    private JoinedRoomItemViewController roomItemViewController;
+    private Node roomItemView;
+
+    private JoinedRoomViewController roomViewController;
+    private Node roomView;
+
+    public Room(ResourceBundle i18n, Consumer<Room> selectAction) {
+        this.i18n = i18n;
+        this.selectAction = selectAction;
     }
 
     /**
-     * Set a topic.
+     * Parse joined room.
      *
-     * @param topic the room topic.
+     * @param roomId     the room id.
+     * @param joinedRoom the room data.
+     * @param account    the account.
+     * @return UI actions.
      */
-    public void setTopic(String topic) {
-        this.topic.setValue(topic);
+    public List<Runnable> parse(String roomId, JoinedRoom joinedRoom, MatrixAccount account) {
+        if (getRoomId() == null) {
+            return initRoom(roomId, joinedRoom, account);
+        } else {
+            return updateRoom(joinedRoom, account);
+        }
     }
 
-    /**
-     * Topic property.
-     *
-     * @return The topic property.
-     */
-    public SimpleStringProperty topicProperty() {
-        return topic;
+    protected List<Runnable> initRoom(String roomId, JoinedRoom joinedRoom, MatrixAccount account) {
+        setRoomId(roomId);
+
+        try {
+            FXMLLoader roomItemLoader = new FXMLLoader(Room.class.getResource("/io/github/ma1uta/jxclient/ui/JoinedRoomItem.fxml"), i18n);
+            roomItemView = roomItemLoader.load();
+            roomItemViewController = roomItemLoader.getController();
+            roomItemView.setOnMouseClicked(e -> selectAction.accept(this));
+
+            FXMLLoader roomLoader = new FXMLLoader(Room.class.getResource("/io/github/ma1uta/jxclient/ui/JoinedRoom.fxml"), i18n);
+            roomView = roomLoader.load();
+            roomViewController = roomLoader.getController();
+
+            return updateRoom(joinedRoom, account);
+        } catch (IOException e) {
+            e.printStackTrace();
+            return Collections.emptyList();
+        }
+    }
+
+    protected List<Runnable> updateRoom(JoinedRoom joinedRoom, MatrixAccount account) {
+        var actions = new ArrayList<Runnable>();
+        actions.addAll(roomItemViewController.parse(joinedRoom, account));
+        actions.addAll(roomViewController.parse(joinedRoom, account));
+        return actions;
+    }
+
+    public String getRoomId() {
+        return roomId;
+    }
+
+    public void setRoomId(String roomId) {
+        this.roomId = roomId;
+    }
+
+    public JoinedRoomItemViewController getRoomItemViewController() {
+        return roomItemViewController;
+    }
+
+    public void setRoomItemViewController(JoinedRoomItemViewController roomItemViewController) {
+        this.roomItemViewController = roomItemViewController;
+    }
+
+    public Node getRoomItemView() {
+        return roomItemView;
+    }
+
+    public void setRoomItemView(Node roomItemView) {
+        this.roomItemView = roomItemView;
+    }
+
+    public JoinedRoomViewController getRoomViewController() {
+        return roomViewController;
+    }
+
+    public void setRoomViewController(JoinedRoomViewController roomViewController) {
+        this.roomViewController = roomViewController;
+    }
+
+    public Node getRoomView() {
+        return roomView;
+    }
+
+    public void setRoomView(Node roomView) {
+        this.roomView = roomView;
     }
 }

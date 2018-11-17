@@ -38,6 +38,7 @@ import org.controlsfx.validation.Validator;
 
 import java.net.URL;
 import java.util.ResourceBundle;
+import java.util.concurrent.Executors;
 
 /**
  * LoginViewController view.
@@ -88,7 +89,8 @@ public class LoginViewController implements Initializable {
                         request.setIdentifier(userIdentifier);
                         request.setPassword(passwordField.getText().toCharArray());
                         request.setInitialDeviceDisplayName("jxclient");
-                        var loginClient = new MatrixClient.Builder().requestFactory(new PlainRequestFactory(serverField.getText())).build();
+                        var loginClient = new MatrixClient.Builder().requestFactory(new PlainRequestFactory(serverField.getText(),
+                            Executors.newSingleThreadExecutor())).build();
                         return loginClient.auth().login(localpartField.getText(), passwordField.getText().toCharArray()).join();
                     }
                 };
