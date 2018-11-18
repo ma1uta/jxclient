@@ -27,8 +27,6 @@ import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 
 import java.net.URL;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.ResourceBundle;
 
 /**
@@ -52,14 +50,12 @@ public class JoinedRoomItemViewController implements Initializable {
      *
      * @param joinedRoom the joined room.
      * @param account    the account.
-     * @return UI actions.
      */
-    public List<Runnable> parse(JoinedRoom joinedRoom, MatrixAccount account) {
-        var actions = new ArrayList<Runnable>();
+    public void parse(JoinedRoom joinedRoom, MatrixAccount account) {
         joinedRoom.getState().getEvents().forEach(event -> {
             if (event instanceof RoomName) {
                 RoomName roomName = (RoomName) event;
-                actions.add(() -> this.roomName.setText(roomName.getContent().getName()));
+                account.updateUI(() -> this.roomName.setText(roomName.getContent().getName()));
             }
             if (event instanceof RoomAvatar) {
                 RoomAvatar roomAvatar = (RoomAvatar) event;
@@ -72,7 +68,5 @@ public class JoinedRoomItemViewController implements Initializable {
                 });
             }
         });
-
-        return actions;
     }
 }

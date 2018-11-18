@@ -23,9 +23,6 @@ import javafx.fxml.FXMLLoader;
 import javafx.scene.Node;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
 import java.util.ResourceBundle;
 import java.util.function.Consumer;
 
@@ -55,17 +52,16 @@ public class Room {
      * @param roomId     the room id.
      * @param joinedRoom the room data.
      * @param account    the account.
-     * @return UI actions.
      */
-    public List<Runnable> parse(String roomId, JoinedRoom joinedRoom, MatrixAccount account) {
+    public void parse(String roomId, JoinedRoom joinedRoom, MatrixAccount account) {
         if (getRoomId() == null) {
-            return initRoom(roomId, joinedRoom, account);
+            initRoom(roomId, joinedRoom, account);
         } else {
-            return updateRoom(joinedRoom, account);
+            updateRoom(joinedRoom, account);
         }
     }
 
-    protected List<Runnable> initRoom(String roomId, JoinedRoom joinedRoom, MatrixAccount account) {
+    protected void initRoom(String roomId, JoinedRoom joinedRoom, MatrixAccount account) {
         setRoomId(roomId);
 
         try {
@@ -79,18 +75,15 @@ public class Room {
             roomView = roomLoader.load();
             roomViewController = roomLoader.getController();
 
-            return updateRoom(joinedRoom, account);
+            updateRoom(joinedRoom, account);
         } catch (IOException e) {
             e.printStackTrace();
-            return Collections.emptyList();
         }
     }
 
-    protected List<Runnable> updateRoom(JoinedRoom joinedRoom, MatrixAccount account) {
-        var actions = new ArrayList<Runnable>();
-        actions.addAll(roomItemViewController.parse(joinedRoom, account));
-        actions.addAll(roomViewController.parse(joinedRoom, account));
-        return actions;
+    protected void updateRoom(JoinedRoom joinedRoom, MatrixAccount account) {
+        roomItemViewController.parse(joinedRoom, account);
+        roomViewController.parse(joinedRoom, account);
     }
 
     public String getRoomId() {

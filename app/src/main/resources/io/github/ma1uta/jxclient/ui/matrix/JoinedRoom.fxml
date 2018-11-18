@@ -18,8 +18,8 @@
 
 <?import javafx.scene.control.ScrollPane?>
 <?import javafx.scene.layout.BorderPane?>
+<?import javafx.scene.layout.FlowPane?>
 <?import javafx.scene.layout.Pane?>
-<?import javafx.scene.layout.VBox?>
 <BorderPane
         xmlns="http://javafx.com/javafx"
         xmlns:fx="http://javafx.com/fxml/1"
@@ -30,11 +30,14 @@
                 prefHeight="200.0"
                 prefWidth="200.0"
                 BorderPane.alignment="CENTER"
+                fitToWidth="true"
+                vbarPolicy="NEVER"
         >
-            <VBox
+            <FlowPane
                     fx:id="timeline"
+                    orientation="VERTICAL"
             >
-            </VBox>
+            </FlowPane>
         </ScrollPane>
     </center>
     <bottom>

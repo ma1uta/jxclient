@@ -55,4 +55,11 @@ public interface Account {
      * @return {@code true} if th login view is showed.
      */
     boolean isLoginView();
+
+    /**
+     * Add the action to queue to run in the FX thread to update UI.
+     *
+     * @param action action to update UI.
+     */
+    void updateUI(Runnable action);
 }

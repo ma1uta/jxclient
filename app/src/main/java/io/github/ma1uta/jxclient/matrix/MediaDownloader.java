@@ -16,8 +16,6 @@
 
 package io.github.ma1uta.jxclient.matrix;
 
-import javafx.application.Platform;
-
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Consumer;
@@ -70,7 +68,7 @@ public class MediaDownloader {
      * @param callback callback.
      */
     public void download(String mxcUrl, Consumer<String> callback) {
-        download(mxcUrl).thenAccept(url -> Platform.runLater(() -> callback.accept(url)));
+        download(mxcUrl).thenAccept(url -> account.updateUI(() -> callback.accept(url)));
     }
 
     private void validate(String mxcUrl) {

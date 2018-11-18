@@ -27,10 +27,9 @@ import javafx.collections.FXCollections;
 import javafx.collections.ObservableMap;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
-import javafx.scene.layout.VBox;
+import javafx.scene.layout.FlowPane;
 
 import java.net.URL;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.ResourceBundle;
 
@@ -44,7 +43,7 @@ public class JoinedRoomViewController implements Initializable {
     private ObservableMap<String, AbstractMessage<?>> messages;
 
     @FXML
-    private VBox timeline;
+    private FlowPane timeline;
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
@@ -58,10 +57,8 @@ public class JoinedRoomViewController implements Initializable {
      *
      * @param joinedRoom the joined room.
      * @param account    the account.
-     * @return UI actions.
      */
-    public List<Runnable> parse(JoinedRoom joinedRoom, MatrixAccount account) {
-        var actions = new ArrayList<Runnable>();
+    public void parse(JoinedRoom joinedRoom, MatrixAccount account) {
         Timeline timeline = joinedRoom.getTimeline();
         if (timeline != null) {
             List<Event> events = timeline.getEvents();
@@ -72,7 +69,7 @@ public class JoinedRoomViewController implements Initializable {
                             RoomMessage<?> roomMessage = (RoomMessage<?>) e;
                             var pair = messageLoader.load(roomMessage, account);
                             if (pair != null) {
-                                actions.add(() -> this.timeline.getChildren().add(pair.getValue()));
+                                account.updateUI(() -> this.timeline.getChildren().add(pair.getValue()));
                                 messages.put(roomMessage.getEventId(), pair.getKey());
                             }
                         }
@@ -82,6 +79,5 @@ public class JoinedRoomViewController implements Initializable {
                 });
             }
         }
-        return actions;
     }
 }

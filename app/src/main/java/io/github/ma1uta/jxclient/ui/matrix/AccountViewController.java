@@ -19,7 +19,6 @@ package io.github.ma1uta.jxclient.ui.matrix;
 import io.github.ma1uta.jxclient.matrix.MatrixAccount;
 import io.github.ma1uta.jxclient.matrix.Room;
 import io.github.ma1uta.matrix.client.model.sync.SyncResponse;
-import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableMap;
 import javafx.fxml.FXML;
@@ -28,7 +27,6 @@ import javafx.scene.control.SplitPane;
 import javafx.scene.layout.VBox;
 
 import java.net.URL;
-import java.util.ArrayList;
 import java.util.ResourceBundle;
 
 /**
@@ -62,10 +60,8 @@ public class AccountViewController implements Initializable {
      * Parse account data.
      *
      * @param syncResponse account data.
-     * @param account      account.
      */
-    public void parse(SyncResponse syncResponse, MatrixAccount account) {
-        var actions = new ArrayList<Runnable>();
+    public void parse(SyncResponse syncResponse) {
         var rooms = syncResponse.getRooms();
         if (rooms != null) {
             var join = rooms.getJoin();
@@ -76,24 +72,15 @@ public class AccountViewController implements Initializable {
                         room = new Room(i18n, this::selectRoom);
                         this.rooms.put(roomId, room);
                         final var newRoom = room;
-                        actions.add(() -> roomList.getChildren().add(newRoom.getRoomItemView()));
+                        account.updateUI(() -> roomList.getChildren().add(newRoom.getRoomItemView()));
                     }
                     try {
-                        actions.addAll(room.parse(roomId, roomData, account));
+                        room.parse(roomId, roomData, account);
                     } catch (Exception e) {
                         e.printStackTrace();
                     }
                 });
             }
-        }
-        if (!actions.isEmpty()) {
-            actions.forEach(action -> Platform.runLater(() -> {
-                try {
-                    action.run();
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
-            }));
         }
     }
 

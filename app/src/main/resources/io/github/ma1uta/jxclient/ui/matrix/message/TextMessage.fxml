@@ -29,5 +29,6 @@
             AnchorPane.bottomAnchor="0"
             AnchorPane.topAnchor="0"
             fx:id="body"
+            wrapText="true"
     />
 </AnchorPane>

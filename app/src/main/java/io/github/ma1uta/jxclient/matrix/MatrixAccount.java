@@ -43,11 +43,15 @@ import org.kordamp.ikonli.javafx.FontIcon;
 import org.kordamp.ikonli.material.Material;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Queue;
 import java.util.Random;
 import java.util.ResourceBundle;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 import java.util.prefs.Preferences;
 
 /**
@@ -55,7 +59,9 @@ import java.util.prefs.Preferences;
  */
 public class MatrixAccount implements Account {
 
-    private static final double DEFAULT_SYNC_PERIOD = 30D;
+    private static final double DEFAULT_SYNC_PERIOD = 0.3D;
+    private static final long DEFAULT_UI_SYNC_DELAY = 500L;
+    private static final int DEFAULT_UI_ACTIONS_QUEUE = 10;
 
     private System.Logger logger;
 
@@ -82,6 +88,8 @@ public class MatrixAccount implements Account {
 
     private final BooleanProperty loading = new SimpleBooleanProperty(false);
     private MediaDownloader downloader;
+
+    private final Queue<Runnable> uiQueue = new ConcurrentLinkedQueue<>();
 
     private ScheduledExecutorService executorService = Executors.newScheduledThreadPool(2);
 
@@ -152,6 +160,22 @@ public class MatrixAccount implements Account {
         };
         syncLoop.setExecutor(executorService);
         syncLoop.setPeriod(Duration.seconds(DEFAULT_SYNC_PERIOD));
+        executorService.scheduleAtFixedRate(() -> {
+            int count = 0;
+            Runnable action;
+            var actionsToRun = new ArrayList<Runnable>(DEFAULT_UI_ACTIONS_QUEUE);
+            do {
+                action = uiQueue.poll();
+                if (action != null) {
+                    actionsToRun.add(action);
+                    count++;
+                }
+            }
+            while (count < DEFAULT_UI_ACTIONS_QUEUE && action != null);
+            if (!actionsToRun.isEmpty()) {
+                Platform.runLater(() -> actionsToRun.forEach(Runnable::run));
+            }
+        }, 0, DEFAULT_UI_SYNC_DELAY, TimeUnit.MILLISECONDS);
     }
 
     @Override
@@ -170,6 +194,11 @@ public class MatrixAccount implements Account {
     @Override
     public boolean isLoginView() {
         return this.deviceId == null;
+    }
+
+    @Override
+    public void updateUI(Runnable action) {
+        uiQueue.offer(action);
     }
 
     public MediaDownloader getDownloader() {
@@ -285,7 +314,7 @@ public class MatrixAccount implements Account {
     private void parseInitialSync(SyncResponse syncResponse) {
         setLoading(true);
         try {
-            accountViewController.parse(syncResponse, this);
+            accountViewController.parse(syncResponse);
         } catch (Exception e) {
             e.printStackTrace();
         } finally {
@@ -297,7 +326,7 @@ public class MatrixAccount implements Account {
         if (!isLoading()) {
             setLoading(true);
             try {
-                accountViewController.parse(syncResponse, this);
+                accountViewController.parse(syncResponse);
             } catch (Exception e) {
                 e.printStackTrace();
             } finally {
