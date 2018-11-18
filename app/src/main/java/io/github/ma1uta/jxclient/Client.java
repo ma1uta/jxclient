@@ -16,7 +16,6 @@
 
 package io.github.ma1uta.jxclient;
 
-import io.github.ma1uta.jxclient.matrix.MatrixAccount;
 import io.github.ma1uta.jxclient.splash.FinishLoadingNotification;
 import io.github.ma1uta.jxclient.ui.MainViewController;
 import javafx.application.Application;
@@ -33,11 +32,7 @@ import java.awt.SystemTray;
 import java.awt.Toolkit;
 import java.awt.TrayIcon;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.ResourceBundle;
-import java.util.prefs.BackingStoreException;
-import java.util.prefs.Preferences;
 import javax.imageio.ImageIO;
 import javax.swing.SwingUtilities;
 
@@ -53,7 +48,7 @@ public class Client extends Application {
     private Stage rootStage;
     private Parent rootForm;
     private FXMLLoader rootFormLoader;
-    private List<MatrixAccount> accountList = new ArrayList<>();
+    private AccountManager accountManager;
 
     private ResourceBundle i18nBundle;
 
@@ -63,12 +58,12 @@ public class Client extends Application {
 
     @Override
     public void init() throws Exception {
-        Platform.setImplicitExit(false);
         app = this;
         i18nBundle = ResourceBundle.getBundle("i18n/messages");
         rootFormLoader = new FXMLLoader(getClass().getResource("/io/github/ma1uta/jxclient/ui/Main.fxml"), i18nBundle);
         rootForm = rootFormLoader.load();
-        loadAccounts();
+        accountManager = new AccountManager(i18nBundle);
+        accountManager.loadAccounts();
         initTray();
     }
 
@@ -76,9 +71,10 @@ public class Client extends Application {
     public void start(Stage primaryStage) throws Exception {
         rootStage = primaryStage;
         var scene = new Scene(rootForm);
+        scene.getStylesheets().add(getClass().getResource("/css/default.css").toExternalForm());
         rootStage.setScene(scene);
         MainViewController rootController = rootFormLoader.getController();
-        for (MatrixAccount account : accountList) {
+        for (Account account : accountManager.accounts()) {
             rootController.addAccount(account);
         }
         rootStage.setTitle(i18nBundle.getString("app.title"));
@@ -87,44 +83,16 @@ public class Client extends Application {
         notifyPreloader(new FinishLoadingNotification());
     }
 
-    private void loadAccounts() throws BackingStoreException {
-        var root = Preferences.userRoot();
-        var accounts = root.node("jxclient/accounts");
-        for (var accountName : accounts.childrenNames()) {
-            var account = new MatrixAccount();
-            account.init(accounts.node(accountName), i18nBundle);
-            accountList.add(0, account);
-        }
-        if (accountList.isEmpty()) {
-            addNewAccount(false);
-        }
-    }
-
     /**
      * Add tab to add a new account.
      *
-     * @param addToController either to add new account to controller.
+     * @param type account type.
      */
-    public void addNewAccount(boolean addToController) {
-        if (!accountList.get(accountList.size() - 1).isStub()) {
-            var account = new MatrixAccount();
-            account.init(i18nBundle);
-            accountList.add(account);
-            if (addToController) {
-                MainViewController controller = rootFormLoader.getController();
-                controller.addAccount(account);
-                controller.select(accountList.size() - 1);
-            }
-        }
-    }
-
-    /**
-     * Remove account.
-     *
-     * @param matrixAccount The account to remove.
-     */
-    public void removeAccount(MatrixAccount matrixAccount) {
-        accountList.remove(matrixAccount);
+    public void addNewAccount(AccountManager.Type type) {
+        var account = accountManager.newAccount(type);
+        MainViewController controller = rootFormLoader.getController();
+        controller.addAccount(account);
+        controller.select(accountManager.accounts().size() - 1);
     }
 
     private void initTray() {
@@ -132,6 +100,7 @@ public class Client extends Application {
         if (SystemTray.isSupported()) {
             SwingUtilities.invokeLater(() -> {
                 try {
+                    Platform.setImplicitExit(false);
                     var popupMenu = new PopupMenu();
 
                     var showHide = new MenuItem(i18nBundle.getString("app.tray.showHide"));

@@ -25,6 +25,7 @@ module jxclient {
 
     opens io.github.ma1uta.jxclient to javafx.graphics;
     opens io.github.ma1uta.jxclient.ui to javafx.fxml;
-    opens io.github.ma1uta.jxclient.ui.message to javafx.fxml;
+    opens io.github.ma1uta.jxclient.ui.matrix to javafx.fxml;
+    opens io.github.ma1uta.jxclient.ui.matrix.message to javafx.fxml;
 
 }

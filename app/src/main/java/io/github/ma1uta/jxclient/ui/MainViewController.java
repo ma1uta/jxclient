@@ -16,8 +16,9 @@
 
 package io.github.ma1uta.jxclient.ui;
 
+import io.github.ma1uta.jxclient.Account;
+import io.github.ma1uta.jxclient.AccountManager;
 import io.github.ma1uta.jxclient.Client;
-import io.github.ma1uta.jxclient.matrix.MatrixAccount;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
@@ -33,7 +34,7 @@ import java.util.ResourceBundle;
  */
 public class MainViewController implements Initializable {
 
-    private ObservableList<MatrixAccount> accounts = FXCollections.observableArrayList();
+    private ObservableList<Account> accounts = FXCollections.observableArrayList();
 
     @FXML
     private TabPane tabPane;
@@ -46,7 +47,7 @@ public class MainViewController implements Initializable {
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
-        addAccountButton.setOnAction(event -> Client.getInstance().addNewAccount(true));
+        addAccountButton.setOnAction(event -> Client.getInstance().addNewAccount(AccountManager.Type.MATRIX));
     }
 
     /**
@@ -54,7 +55,7 @@ public class MainViewController implements Initializable {
      *
      * @param account the new account.
      */
-    public void addAccount(MatrixAccount account) {
+    public void addAccount(Account account) {
         accounts.add(account);
         tabPane.getTabs().add(account.getTab());
     }

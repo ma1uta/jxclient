@@ -18,9 +18,10 @@ package io.github.ma1uta.jxclient.matrix;
 
 import static java.lang.System.Logger.Level.ERROR;
 
-import io.github.ma1uta.jxclient.Client;
-import io.github.ma1uta.jxclient.ui.AccountViewController;
-import io.github.ma1uta.jxclient.ui.LoginViewController;
+import io.github.ma1uta.jxclient.Account;
+import io.github.ma1uta.jxclient.AccountManager;
+import io.github.ma1uta.jxclient.ui.matrix.AccountViewController;
+import io.github.ma1uta.jxclient.ui.matrix.LoginViewController;
 import io.github.ma1uta.matrix.Id;
 import io.github.ma1uta.matrix.client.MatrixClient;
 import io.github.ma1uta.matrix.client.model.account.WhoamiResponse;
@@ -42,19 +43,17 @@ import org.kordamp.ikonli.javafx.FontIcon;
 import org.kordamp.ikonli.material.Material;
 
 import java.io.IOException;
-import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
+import java.util.HashMap;
 import java.util.Random;
 import java.util.ResourceBundle;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
-import java.util.prefs.BackingStoreException;
 import java.util.prefs.Preferences;
 
 /**
  * Matrix account.
  */
-public class MatrixAccount {
+public class MatrixAccount implements Account {
 
     private static final double DEFAULT_SYNC_PERIOD = 30D;
 
@@ -62,6 +61,8 @@ public class MatrixAccount {
 
     private Tab accountTab;
     private Parent loadingView;
+
+    private AccountManager accountManager;
 
     private AccountViewController accountViewController;
     private Parent accountView;
@@ -84,23 +85,25 @@ public class MatrixAccount {
 
     private ScheduledExecutorService executorService = Executors.newScheduledThreadPool(2);
 
+    @Override
+    public AccountManager.Type getType() {
+        return AccountManager.Type.MATRIX;
+    }
+
     /**
      * Initialize account.
      *
      * @param accountNode account preferences.
      * @param i18n        localized messages.
      */
-    public void init(Preferences accountNode, ResourceBundle i18n) {
-        init(accountNode.get("homeserver", null), accountNode.get("deviceId", null), accountNode.get("token", null), i18n);
-    }
-
-    /**
-     * Initialize anonymous mode.
-     *
-     * @param i18n localized messages.
-     */
-    public void init(ResourceBundle i18n) {
-        init(null, null, null, i18n);
+    @Override
+    public void init(AccountManager accountManager, Preferences accountNode, ResourceBundle i18n) {
+        this.accountManager = accountManager;
+        if (accountNode == null) {
+            init(null, null, null, i18n);
+        } else {
+            init(accountNode.get("homeserver", null), accountNode.get("deviceId", null), accountNode.get("token", null), i18n);
+        }
     }
 
     private void init(String homeserver, String deviceId, String token, ResourceBundle i18n) {
@@ -108,7 +111,7 @@ public class MatrixAccount {
         this.i18n = i18n;
         accountTab = new Tab();
         accountTab.setOnCloseRequest(event -> {
-            if (isStub()) {
+            if (isLoginView()) {
                 return;
             }
             var closeAccountDialog = new Alert(Alert.AlertType.CONFIRMATION, i18n.getString("account.close.title"), ButtonType.YES,
@@ -119,7 +122,7 @@ public class MatrixAccount {
                 event.consume();
             }
         });
-        accountTab.setOnClosed(event -> Client.getInstance().removeAccount(MatrixAccount.this));
+        accountTab.setOnClosed(event -> accountManager.removeAccount(this));
         accountTab.setContent(loadingView());
         accountView();
         if (homeserver == null || deviceId == null || token == null) {
@@ -151,6 +154,7 @@ public class MatrixAccount {
         syncLoop.setPeriod(Duration.seconds(DEFAULT_SYNC_PERIOD));
     }
 
+    @Override
     public Tab getTab() {
         return accountTab;
     }
@@ -163,7 +167,8 @@ public class MatrixAccount {
         return client;
     }
 
-    public boolean isStub() {
+    @Override
+    public boolean isLoginView() {
         return this.deviceId == null;
     }
 
@@ -185,16 +190,11 @@ public class MatrixAccount {
     }
 
     private void syncPreferences(String homeserver, String deviceId, String token) {
-        var root = Preferences.userRoot();
-        Preferences node = root.node("jxclient/accounts/" + URLEncoder.encode(this.userId, StandardCharsets.UTF_8));
-        node.put("homeserver", homeserver);
-        node.put("token", token);
-        node.put("deviceId", deviceId);
-        try {
-            node.sync();
-        } catch (BackingStoreException e) {
-            e.printStackTrace();
-        }
+        var prefs = new HashMap<String, String>();
+        prefs.put("homeserver", homeserver);
+        prefs.put("token", token);
+        prefs.put("deviceId", deviceId);
+        accountManager.sync(this, prefs);
     }
 
     private void userMode(String homeserver, String deviceId, String token) {
@@ -241,7 +241,7 @@ public class MatrixAccount {
     private Parent loginView() {
         try {
             if (loginView == null) {
-                FXMLLoader loader = new FXMLLoader(getClass().getResource("/io/github/ma1uta/jxclient/ui/Login.fxml"), i18n);
+                FXMLLoader loader = new FXMLLoader(getClass().getResource("/io/github/ma1uta/jxclient/ui/matrix/Login.fxml"), i18n);
                 loginView = loader.load();
                 loginViewController = loader.getController();
                 loginViewController.setAccount(this);
@@ -256,7 +256,7 @@ public class MatrixAccount {
     private void accountView() {
         if (accountView == null) {
             try {
-                FXMLLoader loader = new FXMLLoader(getClass().getResource("/io/github/ma1uta/jxclient/ui/Account.fxml"), i18n);
+                FXMLLoader loader = new FXMLLoader(getClass().getResource("/io/github/ma1uta/jxclient/ui/matrix/Account.fxml"), i18n);
                 accountView = loader.load();
                 accountViewController = loader.getController();
                 accountViewController.setAccount(this);
