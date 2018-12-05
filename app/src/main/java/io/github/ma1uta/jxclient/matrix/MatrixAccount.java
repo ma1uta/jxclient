@@ -86,7 +86,7 @@ public class MatrixAccount implements Account {
     private AccountModeService accountModeService = new AccountModeService();
     private ScheduledService<Void> syncLoop;
 
-    private final BooleanProperty loading = new SimpleBooleanProperty(false);
+    private final BooleanProperty initialSync = new SimpleBooleanProperty(false);
     private MediaDownloader downloader;
 
     private final Queue<Runnable> uiQueue = new ConcurrentLinkedQueue<>();
@@ -312,49 +312,49 @@ public class MatrixAccount implements Account {
     }
 
     private void parseInitialSync(SyncResponse syncResponse) {
-        setLoading(true);
+        setInitialSync(true);
         try {
             accountViewController.parse(syncResponse);
         } catch (Exception e) {
             e.printStackTrace();
         } finally {
-            setLoading(false);
+            setInitialSync(false);
         }
     }
 
     private void parseSync(SyncResponse syncResponse) {
-        if (!isLoading()) {
-            setLoading(true);
+        if (!isInitialSync()) {
+            setInitialSync(true);
             try {
                 accountViewController.parse(syncResponse);
             } catch (Exception e) {
                 e.printStackTrace();
             } finally {
-                setLoading(false);
+                setInitialSync(false);
             }
         }
     }
 
-    public boolean isLoading() {
-        return loading.get();
+    public boolean isInitialSync() {
+        return initialSync.get();
     }
 
     /**
-     * Setter of the loading property.
+     * Setter of the initialSync property.
      *
-     * @param loading new value.
+     * @param initialSync new value.
      */
-    public void setLoading(boolean loading) {
-        this.loading.setValue(loading);
+    public void setInitialSync(boolean initialSync) {
+        this.initialSync.setValue(initialSync);
     }
 
     /**
      * Loading property.
      *
-     * @return loading property.
+     * @return initialSync property.
      */
-    public BooleanProperty loadingProperty() {
-        return loading;
+    public BooleanProperty initialSyncProperty() {
+        return initialSync;
     }
 
     /**
